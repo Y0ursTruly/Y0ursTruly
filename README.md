@@ -1,5 +1,7 @@
 ### Hi there 👋
 Make sure to check some of my repositores like <a href="https://github.com/Y0ursTruly/slate.git">Slate</a> or [webject](https://github.com/Y0ursTruly/webject.git)
+- 📫 How to reach me: paulrytaylor@gmail.com
+- 👁️ I'm looking to develop the browser frontend of `slate`
 <!--
 - 🔭 I’m currently working on "slate" which is a messaging system that enables users to send messages to each other without routing those messages through the mainserver
 - 🤔 I’m looking for help with sending files through THIS messaging system
