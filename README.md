@@ -1,7 +1,7 @@
 ### Hi there 👋
-Make sure to check some of my repositores like <a href="https://github.com/Y0ursTruly/slate.git">Slate</a> or [webject](https://github.com/Y0ursTruly/webject.git)
+Make sure to check some of my repositores like <a href="https://github.com/Y0ursTruly/slate.git">Slate</a> or [Webject](https://github.com/Y0ursTruly/webject.git) or a fun C project I did [C-object](https://github.com/Y0ursTruly/c-object.git)
 - 📫 How to reach me: paulrytaylor@gmail.com
-- 👁️ I'm looking to develop the browser frontend of `slate`
+- 👁️ I'll be working on `slate` a good bit tomorrow and then major updates to another project I abandoned coming soon :D
 <!--
 - 🔭 I’m currently working on "slate" which is a messaging system that enables users to send messages to each other without routing those messages through the mainserver
 - 🤔 I’m looking for help with sending files through THIS messaging system
