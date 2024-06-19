@@ -9,3 +9,6 @@ My favourite languages are NodeJS and C. I am currently a university student but
 - [Maze Generation Library](https://github.com/Y0ursTruly/maze)
 - [Homemade Cipher](https://github.com/Y0ursTruly/homemade-cipher) ~~well technically this one was before university but I separated it from the Slate project that I will renovate~~
 - [Custom Data Structure ValueTree](https://github.com/Y0ursTruly/battledudes-elo-bot/blob/master/valueTree.js) which is applied in a discord bot for tracking ELO in a game called [battledudes](https://battledudes.io) ~~not in the game's main discord server but a community made one~~
+
+### Contact
+- 📫 Reach me via email at paulrytaylor@gmail.com or discord by `yours.truly.`
