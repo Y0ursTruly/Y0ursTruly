@@ -48,7 +48,7 @@ function bfr2str(buf) {
 async function bufferChunk(stream,maxLength=Infinity){
   return new Promise((resolve,reject)=>{
     var temp="" //adding text faster than Buffer.concat
-    if(!stream) return temp; //apparently "certainly will be streams" like req.body can be undefined ;-;
+    if(!(stream?.on)) return temp; //loosely ensuring stream is stream
     stream.on('data', function(chunk){
       if(temp.length+chunk.length>maxLength)
         return reject("data length exceeded");
