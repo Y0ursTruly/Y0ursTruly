@@ -147,7 +147,7 @@ let random =_=> (crypto.webcrypto||crypto).getRandomValues(new Uint32Array(1))[0
 let range =(max,min)=> (random()%(max-min))+min; //numeric range
 var arr='abcdefgjiklmnopqrstuvwxyz-_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
-function randomChar(n){
+function randomChar(n=16){
   do{
     var str="", length=range(2*n,n)
     for(let i=0;i<length;i++) str+=arr[range(arr.length-1,0)];
