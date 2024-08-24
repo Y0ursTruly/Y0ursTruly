@@ -74,6 +74,7 @@ function HASH(text){
   return createHash('sha256').update(text).digest('base64')
 }
 async function requestURL(url,method="GET",headers={},data=""){
+  if(typeof data==="string") data=str2bfr(data);
   try{var {hostname,protocol,pathname,search}=new URL(url)}
   catch{return "INVALID URL"}
   return new Promise(function(resolve,reject){
