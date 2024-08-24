@@ -93,10 +93,8 @@ async function AES_ENC(data,key,s,throwErrors){
   key ||= String(aes256key)
   return new Promise(function(resolve,reject){
     scrypt(key,s,32,function(err,key){
-      console.log(key)
       if(err) return throwErrors?reject(err):resolve("");
       const iv=Buffer.from( (crypto.webcrypto||crypto).getRandomValues(new Uint8Array(16)) )
-      console.log(bfr2str(iv))
       let cipher=createCipheriv('aes-256-ctr',key,iv), str=bfr2str(iv)
       cipher.on('error',function(err){throwErrors?reject(err):resolve("")})
       cipher.on('data',function(chunk){str+=bfr2str(chunk)})
@@ -113,9 +111,7 @@ async function AES_DEC(base64str,key,s,throwErrors){
   return new Promise(function(resolve,reject){
     //scryptPbkdf.scrypt(key,s,32,{N:16384,r:8,p:1}).then(function(key,err){
     scrypt(key,s,32,function(err,key){
-      console.log(key)
       if(err) return throwErrors?reject(err):resolve("");
-      console.log(bfr2str(iv))
       let decipher=createDecipheriv('aes-256-ctr',key,iv), str=""
       decipher.on('readable',function(){
         for(let chunk=decipher.read(); chunk!==null; chunk=decipher.read())
