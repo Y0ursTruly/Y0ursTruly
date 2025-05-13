@@ -11,7 +11,7 @@ const {createHash,scrypt,createCipheriv,createDecipheriv}=crypto, {aes256key,sal
 
 //also ensure that "port" is set in either the environment
 const https=require('node:https'), http=require('node:http'), fs=require('node:fs')
-module.exports=function create_server(responder,options={}){
+function create_server(responder,options={}){
   let {tls_key,tls_cert}=options
   tls_key ||= process.env.tls_key || process.env.TLS_KEY
   tls_cert ||= process.env.tls_cert || process.env.TLS_CERT
