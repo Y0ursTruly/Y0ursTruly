@@ -52,7 +52,7 @@ function create_server(responder,options={}){
   return server
 }
 //const scryptPbkdf = require('scrypt-pbkdf')
-let ab_map=[], str_map={__proto__:null}, cache=new Map(), u=new Uint32Array(1)
+let ab_map=[], str_map={__proto__:null}, cache=new Map()
 for(let i=0;i<256;i++){
   ab_map[i]=String.fromCharCode(i);
   str_map[ab_map[i]]=i;
@@ -90,10 +90,14 @@ async function bufferChunk(stream,maxLength=Infinity){
     stream.on('error', reject)
   })
 }
-Array.prototype.random=function(){
-  return this[(crypto.webcrypto||crypto).getRandomValues(u)[0]%this.length];
+let rIndex=0, u32arr=new Uint32Array(2**8), pow32=pow(2,32)
+function random(){
+  const result=(rIndex? u32arr[rIndex]: webcrypto.getRandomValues(u32arr)[rIndex]) / pow32
+  rIndex = (rIndex+1)%2**8
+  return result
 }
-String.prototype.random=Array.prototype.random
+Array.prototype.random=random
+String.prototype.random=random
 function randomText(alphabet,length){
   do{
     var str="";
