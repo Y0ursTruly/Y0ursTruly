@@ -10,7 +10,6 @@ const {createHash,scrypt,createCipheriv,createDecipheriv}=crypto, {aes256key,sal
 //and if the values are NOT strings (like buffers), they would be treated as the key and cert DIRECTLY
 
 //also ensure that "port" is set in either the environment
-const https=require('node:https'), http=require('node:http'), fs=require('node:fs')
 function create_server(responder,options={}){
   let {tls_key,tls_cert}=options
   tls_key ||= process.env.tls_key || process.env.TLS_KEY
@@ -49,6 +48,7 @@ function create_server(responder,options={}){
       server.setSecureContext({key,cert})
     },6e4)
   }
+  //todo: add a route method to the outgoing server object
   return server
 }
 //const scryptPbkdf = require('scrypt-pbkdf')
@@ -84,15 +84,16 @@ async function bufferChunk(stream,maxLength=Infinity){
     stream.on('data', function(chunk){
       if(temp.length+chunk.length>maxLength)
         return reject("data length exceeded");
+      //console.log(bfr2str(chunk)) //was used with `x.requestURL('http://ascii.live/earth',"GET",{"User-Agent":'curl/8.1.2', "Accept":'*/*})`
       temp+=bfr2str(chunk)
     })
     stream.on('end', function(){resolve(temp)})
     stream.on('error', reject)
   })
 }
-let rIndex=0, u32arr=new Uint32Array(2**8), pow32=pow(2,32)
+let rIndex=0, u32arr=new Uint32Array(2**8)
 function random(){
-  const result=(rIndex? u32arr[rIndex]: webcrypto.getRandomValues(u32arr)[rIndex]) / pow32
+  const result=(rIndex? u32arr[rIndex]: (crypto.webcrypto||crypto).getRandomValues(u32arr)[rIndex]) / 2**32
   rIndex = (rIndex+1)%2**8
   return result
 }
@@ -109,6 +110,15 @@ function randomText(alphabet,length){
 function HASH(text){
   return createHash('sha256').update(text).digest('base64')
 }
+function HASH_RAW(text){
+  return createHash('sha256').update(text).digest('binary')
+}
+function HMAC(text,pass){
+  return createHash('sha256',pass).update(text).digest('base64')
+}
+function HMAC_RAW(text,pass){
+  return createHash('sha256',pass).update(text).digest('binary')
+}
 async function requestURL(url,method="GET",headers={},data=""){
   if(typeof data==="string") data=str2bfr(data);
   try{var {hostname,protocol,pathname,search}=new URL(url)}
@@ -121,6 +131,35 @@ async function requestURL(url,method="GET",headers={},data=""){
     request.on('error',function(error){ reject(error.code||error.message||error) })
     request.write(data)
     request.end()
+  })
+}
+async function AES_ENC_RAW(data,key,throwErrors){
+  if(typeof key==="string") key=str2bfr(HASH_RAW(key));
+  return new Promise(function(resolve,reject){
+    const iv=Buffer.from( (crypto.webcrypto||crypto).getRandomValues(new Uint8Array(16)) )
+    const cipher=createCipheriv('aes-256-ctr',key,iv)
+    let str=bfr2str(iv)
+    cipher.on('error',function(err){throwErrors?reject(err):resolve("")})
+    cipher.on('data',function(chunk){str+=bfr2str(chunk)})
+    cipher.on('end',function(){resolve(str)})
+    cipher.write(data)
+    cipher.end()
+  })
+}
+async function AES_DEC_RAW(ciphertext,key,throwErrors){
+  if(typeof key==="string") key=str2bfr(HASH_RAW(key));
+  const iv=str2bfr(ciphertext.substring(0,16)), data=ciphertext.substring(16)
+  return new Promise(function(resolve,reject){
+    const decipher=createDecipheriv('aes-256-ctr',key,iv)
+    let str=""
+    decipher.on('readable',function(){
+      for(let chunk=decipher.read(); chunk!==null; chunk=decipher.read())
+        str+=bfr2str(chunk);
+    })
+    decipher.on('error',function(err){throwErrors?reject(err):resolve("")})
+    decipher.on('end',function(){resolve(str)})
+    decipher.write(data,'binary')
+    decipher.end()
   })
 }
 //aes256key and salt are both of length 32, encrypted text is base64(iv+ciphertext)
@@ -174,18 +213,44 @@ function parseCookies(request){
   })
   return list;
 }
-let randList=new Map() //this block here is for recording random UNIQUE keys
-let random =_=> (crypto.webcrypto||crypto).getRandomValues(new Uint32Array(1))[0];
-let range =(max,min)=> (random()%(max-min))+min; //numeric range
+const randList=new Map() //this block here is for recording random UNIQUE keys
+let range =(max,min)=> Math.floor(random()*(max-min))+min; //numeric range
 var arr='abcdefgjiklmnopqrstuvwxyz-_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
-function randomChar(n=16){
+function randomChar(n=16,repeats=false){
   do{
     var str="", length=range(2*n,n)
     for(let i=0;i<length;i++) str+=arr[range(arr.length-1,0)];
-  }while(randList.has(str));
-  randList.set(str,1); //so that this key won't repeat
-  return str;
+  }while(!repeats && randList.has(str));
+  if(!repeats) randList.set(str,1); //so that this key won't repeat
+  return str
 }
-global.utils||={create_server,str2ab,ab2str,str2bfr,bfr2str,bufferChunk,randomText,HASH,requestURL,AES_ENC,AES_DEC,parseCookies,randomChar,randList};
+async function set_webtoken(data,time,key){
+  if(!data) throw new TypeError("data must be truthy");
+  const payload={
+    [randomChar(8,true)]:randomChar(8,true),
+    data,expires:Date.now()+time, //the actual data that matters
+    [randomChar(8,true)]:randomChar(8,true)
+  }
+  const string=JSON.stringify(payload)
+  const proof=HMAC(string,key)
+  return await AES_ENC_RAW(btoa(string)+','+proof,key)
+}
+async function get_webtoken(ciphertext,key){
+  const plaintext=await AES_DEC_RAW(ciphertext,key)
+  const [btoa_string,proof]=plaintext.split(',')
+  try{
+    var string=atob(btoa_string)
+    var payload=JSON.parse(string)
+  }
+  catch{return false}
+  if(HMAC(string,key)!==proof) return false;
+  if(Date.now()>payload.expires) return false;
+  return payload.data
+}
+global.utils||={
+  create_server,str2ab,ab2str,str2bfr,bfr2str,bufferChunk,randomText,
+  HASH,HASH_RAW,HMAC,HMAC_RAW,requestURL,AES_ENC_RAW,AES_DEC_RAW,AES_ENC,AES_DEC,
+  parseCookies,randomChar,set_webtoken,get_webtoken,random,range,randList
+};
 module.exports=global.utils;
