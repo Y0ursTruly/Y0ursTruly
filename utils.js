@@ -28,6 +28,9 @@ function create_server(responder,options={}){
     return o instanceof RegExp? [o.toString()]: o
   }
   async function main_handler(request,response){
+    const {end,write}=response
+    response.end=function(data,encoding){end.bind(this)(data,encoding||'latin1')}
+    response.write=function(data,encoding){write.bind(this)(data,encoding||'latin1')}
     let items=routes.entries(), item=null
     while(item=items.next(), !item.done){
       const [filter,handlers]=item.value
