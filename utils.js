@@ -1,7 +1,18 @@
 atob ||= (text) => Buffer.from(text, 'base64').toString('binary')
 btoa ||= (text) => Buffer.from(text, 'binary').toString('base64')
 var http=require('node:http'), https=require('node:https'), crypto=require('node:crypto'), fs=require('node:fs')
-const {createHash,scrypt,createCipheriv,createDecipheriv}=crypto, {aes256key,salt}=process.env
+const {createHash,scrypt:origScrypt,createCipheriv,createDecipheriv}=crypto, {aes256key,salt}=process.env
+function scrypt(key,salt,length,op1,op2){
+  const options=typeof op1==="function"?null:op1
+  const fn=typeof op1==="function"?op1:op2
+  scrypt.map ||= new Map()
+  let cache = JSON.stringify([key,salt,length,options])
+  if(scrypt.map.has(cache))  return fn(null,scrypt.map.get(cache));
+  origScrypt(key,salt,length,options,function(err,data){
+    if(!err) scrypt.map.set(cache,data);
+    fn(err,data)
+  })
+}
 //abstraction to use https where it is available, else http
 //https is seen as available if "tls_key" and "tls_cert" are environment variables
 //where "tls_key" is the private key file location and "tls_cert" is the certificate file location (fullchain.pem for letsencrypt)
@@ -11,6 +22,24 @@ const {createHash,scrypt,createCipheriv,createDecipheriv}=crypto, {aes256key,sal
 
 //also ensure that "port" is set in either the environment
 function create_server(responder,options={}){
+  if(responder!==null && typeof responder==="object") options=responder;
+  const routes=new Map(), serialisations=new Map()
+  function replacer(_,o){
+    return o instanceof RegExp? [o.toString()]: o
+  }
+  async function main_handler(request,response){
+    let items=routes.entries(), item=null
+    while(item=items.next(), !item.done){
+      const [filter,handlers]=item.value
+      if(!(await filter(request))) continue;
+      for(let i=0;i<handlers.length;i++){
+        await handlers[i](request,response)
+        if(response.writableEnded) return; //response ended, nothing left to process
+      }
+    }
+    response.end()
+  }
+
   let {tls_key,tls_cert}=options
   tls_key ||= process.env.tls_key || process.env.TLS_KEY
   tls_cert ||= process.env.tls_cert || process.env.TLS_CERT
@@ -20,11 +49,37 @@ function create_server(responder,options={}){
   const envPort=process.env.port||process.env.PORT
   const PORT=envPort? Number(envPort): (typeof options==="number"?options:(options.port||options.PORT))
   const server=ownsCert?
-    https.createServer({key,cert}, responder):
-    http.createServer(responder)
+    https.createServer({key,cert}, main_handler):
+    http.createServer(main_handler)
   server.listen(PORT||(ownsCert?443:80), function(){
     console.log(`hosting http${ownsCert?'s':''} server @ PORT ${server.address().port}`)
   })
+  
+  server.route = function(method, path, ...handlers){
+    if(typeof method==="string"){
+      method=method.toUpperCase()
+      let obj={method,path}, json=JSON.stringify(obj,replacer)
+      let imported=serialisations.get(json)
+      if(imported) routes.get(imported).push(...handlers);
+      else{
+        serialisations.set(json,obj)
+        routes.set(function(request){
+          if(request.method!==method) return false;
+          if(typeof path==="string") return request.url===path;
+          return path.test(request.url)
+        },handlers)
+      }
+    }
+    else if(typeof method==="function"){
+      handlers=arguments.slice(1)
+      let imported=routes.get(method)
+      if(imported) imported.push(...handlers);
+      else routes.set(method,handlers);
+    }
+    return server //because, why not :D
+  }
+  if(typeof responder==="function") server.route(_=>true, responder);
+  
   if(!options.key_renewer){
     options.key_renewer = typeof tls_key==="string"?
       function(){return fs.readFileSync(tls_key)}:
@@ -48,7 +103,7 @@ function create_server(responder,options={}){
       server.setSecureContext({key,cert})
     },6e4)
   }
-  //todo: add a route method to the outgoing server object
+  
   return server
 }
 //const scryptPbkdf = require('scrypt-pbkdf')
