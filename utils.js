@@ -155,8 +155,11 @@ function random(){
   rIndex = (rIndex+1)%2**8
   return result
 }
-Array.prototype.random=random
-String.prototype.random=random
+function proto_random(){
+  return this[Math.floor(random()*this.length)]
+}
+Array.prototype.random=proto_random
+String.prototype.random=proto_random
 function randomText(alphabet,length){
   do{
     var str="";
@@ -278,7 +281,7 @@ var arr='abcdefgjiklmnopqrstuvwxyz-_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(
 function randomChar(n=16,repeats=false){
   do{
     var str="", length=range(2*n,n)
-    for(let i=0;i<length;i++) str+=arr[range(arr.length-1,0)];
+    for(let i=0;i<length;i++) str+=arr.random();
   }while(!repeats && randList.has(str));
   if(!repeats) randList.set(str,1); //so that this key won't repeat
   return str
