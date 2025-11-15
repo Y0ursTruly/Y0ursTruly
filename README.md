@@ -3,7 +3,6 @@ My favourite languages are NodeJS and C. I am currently a university student but
 
 ### Stuff Done while in University
 - [Security Advisory Contribution](https://github.com/advisories/GHSA-25hc-qcg6-38wj) `CVE-2024-38355`
-- [Cyber Scavenger Hunt](https://halfhat-start.onrender.com/) where the first level (the given starting link) is to fix a "broken" image and follow its instructions
 - [Multiplayer Maze Game](https://a-mazed.onrender.com)
 - [Proof of Work CAPTCHA](https://github.com/Y0ursTruly/pow_captcha)
 - [Maze Generation Library](https://github.com/Y0ursTruly/maze)
