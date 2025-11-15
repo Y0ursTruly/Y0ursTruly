@@ -3,7 +3,7 @@ My favourite languages are NodeJS and C. I am currently a university student but
 
 ### Stuff Done while in University
 - [Security Advisory Contribution](https://github.com/advisories/GHSA-25hc-qcg6-38wj) `CVE-2024-38355`
-- [Multiplayer Maze Game](https://a-mazed.onrender.com)
+- [Multiplayer Maze Game](https://paulrytaylor.info.tt) on my own domain ~~render loading time genuinely sukcs currently~~
 - [Proof of Work CAPTCHA](https://github.com/Y0ursTruly/pow_captcha)
 - [Maze Generation Library](https://github.com/Y0ursTruly/maze)
 - [Homemade Cipher](https://github.com/Y0ursTruly/homemade-cipher) ~~well technically this one was before university but I separated it from the Slate project that I will renovate~~
